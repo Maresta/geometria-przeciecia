@@ -1,6 +1,4 @@
 from flask import Flask, render_template, request
-from shapely.geometry import LineString
-from shapely.ops import linemerge
 import matplotlib.pyplot as plt
 import uuid
 from bentley_ottmann import bentley_ottmann, Point, Segment
