@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <title>Przecięcie odcinków</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 2rem;
+            background-color: #f5f5f5;
+        }
+
+        h1, h2 {
+            color: #333;
+        }
+
+        form {
+            background-color: #fff;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            max-width: 600px;
+            margin-bottom: 2rem;
+        }
+
+        .segment {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+        }
+
+        input[name="segments[]"] {
+            flex-grow: 1;
+            padding: 0.5rem;
+            font-size: 1rem;
+        }
+
+        button {
+            padding: 0.5rem 1rem;
+            font-size: 1rem;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #2980b9;
+        }
+
+        button[type="button"] {
+            background-color: #e74c3c;
+        }
+
+        button[type="button"]:hover {
+            background-color: #c0392b;
+        }
+
+        ul {
+            background-color: #fff;
+            padding: 1rem;
+            border-radius: 8px;
+            box-shadow: 0 0 5px rgba(0,0,0,0.05);
+            max-width: 600px;
+        }
+
+        li {
+            margin-bottom: 0.5rem;
+        }
+
+        .error {
+            color: red;
+            font-weight: bold;
+        }
+
+        input[type="file"] {
+            flex-grow: 1;
+            padding: 0.4rem 0.6rem;
+            font-size: 1rem;
+            background-color: white;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        label {
+            font-weight: bold;
+            display: block;
+            margin: 1rem 0 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <h1>Sprawdź przecięcia odcinków</h1>
+    <form method="post" id="segments-form" enctype="multipart/form-data">
+        <div id="segments-container">
+            <div class="segment">
+                <input name="segments[]" placeholder="x1,y1 x2,y2" required>
+                <button type="button" onclick="removeSegment(this)">Usuń</button>
+            </div>
+        </div>
+        <button type="button" onclick="addSegment()">Dodaj odcinek</button>
+        <button type="submit">Sprawdź</button>
+        <div class="mb-3">
+            <label for="csvFile" class="form-label fw-bold">Importuj z pliku CSV (format: x1,y1 x2,y2; x3,y3 x4,y4)</label>
+            <input type="file" class="form-control" id="csvFile" name="csvFile" accept=".csv">
+        </div>
+    </form>
+
+    {% if error %}
+        <p class="error">Błąd: {{ error }}</p>
+    {% endif %}
+
+    {% if result %}
+        <h2>Wynik przecięć:</h2>
+        <h5>{{ result }}</h5>
+    {% endif %}
+
+    {% if image_path %}
+        <h3>Wizualizacja:</h3>
+        <img src="{{ url_for('static', filename=image_path.split('static/')[-1]) }}" alt="Wykres przecięcia" style="max-width: 100%; height: auto;" id="plot">
+    {% endif %}
+
+    <script>
+        function addSegment() {
+            const container = document.getElementById("segments-container");
+            const div = document.createElement("div");
+            div.className = "segment";
+            div.innerHTML = `<input name="segments[]" placeholder="x1,y1 x2,y2" required>
+                             <button type="button" onclick="removeSegment(this)">Usuń</button>`;
+            container.appendChild(div);
+        }
+
+        function removeSegment(btn) {
+            btn.parentElement.remove();
+        }
+
+        document.getElementById("csvFile").addEventListener("change", function () {
+            if (this.files.length > 0) {
+                document.getElementById("segments-form").submit();
+            }
+        });
+
+        function scrollToCenterOfPlot() {
+            const plot = document.getElementById("plot");
+            if (!plot) return;
+
+            const rect = plot.getBoundingClientRect();
+            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+            const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
+
+            const top = rect.top + scrollTop - window.innerHeight / 2 + rect.height / 2;
+            const left = rect.left + scrollLeft - window.innerWidth / 2 + rect.width / 2;
+
+            window.scrollTo({
+                top: top,
+                left: left,
+                behavior: 'smooth'
+            });
+        }
+
+        // Uruchom funkcję po pełnym załadowaniu strony (np. po renderowaniu obrazu)
+        window.addEventListener("load", scrollToCenterOfPlot);
+        
+    </script>
+</body>
+</html>
