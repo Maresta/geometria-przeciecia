@@ -63,12 +63,6 @@ def segment_y_at(segment, x):
     t = (x - segment.p.x) / (segment.q.x - segment.p.x)
     return segment.p.y + t * (segment.q.y - segment.p.y)
 
-def is_between(a, b, c):
-    """
-    Sprawdza czy c leży pomiędzy a i b (włącznie).
-    """
-    return min(a, b) <= c <= max(a, b)
-
 def segment_intersection(s1, s2):
     """
     Zwraca punkt przecięcia dwóch odcinków (lub odcinek, jeśli współliniowe i nakładają się),
@@ -200,24 +194,3 @@ def bentley_ottmann(segments):
 
     # Zwróć posortowane wyniki
     return sorted(point_result), sorted(segment_result)
-
-def get_point(obj):
-    """
-    Zwraca punkt (jeśli obj to Point) lub początek odcinka (jeśli obj to Segment).
-    """
-    if isinstance(obj, Point):
-        return obj
-    elif isinstance(obj, Segment):
-        return normalize_segment(obj.p, obj.q).p
-    return Point(0, 0)
-
-def round_hash(obj):
-    """
-    Pomocnicza funkcja do haszowania punktów i odcinków z zaokrągleniem.
-    """
-    if isinstance(obj, Point):
-        return round(obj.x, 8), round(obj.y, 8)
-    elif isinstance(obj, Segment):
-        p = normalize_segment(obj.p, obj.q)
-        return (round(p.p.x, 8), round(p.p.y, 8), round(p.q.x, 8), round(p.q.y, 8))
-    return

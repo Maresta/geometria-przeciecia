@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request
-import matplotlib.pyplot as plt
-import uuid
 from bentley_ottmann import bentley_ottmann, Point, Segment
+import plotly.graph_objs as go
+import plotly.offline as pyo
 
 app = Flask(__name__)
 
@@ -13,7 +13,7 @@ if __name__ == "__main__":
 def index():
     result = None
     segments = []
-    image_path = None
+    plot_html = None
 
     if request.method == 'POST':
         # Obsługa wczytywania pliku CSV z odcinkami
@@ -58,59 +58,68 @@ def index():
                         res.append(f"od ({x1:.2f}, {y1:.2f}) do ({x2:.2f}, {y2:.2f})")
                 result = "\n".join(res)
 
+            # --- Wizualizacja wyników z użyciem Plotly ---
+            fig = go.Figure()
+
+            # Rysowanie wszystkich odcinków
+            for seg in segments:
+                fig.add_trace(go.Scatter(
+                    x=[seg.p.x, seg.q.x],
+                    y=[seg.p.y, seg.q.y],
+                    mode='lines+markers',
+                    line=dict(color='gray'),
+                    marker=dict(size=6, color='gray'),
+                    showlegend=False
+                ))
+
+            # Rysowanie punktów przecięcia (z tooltipem)
+            if points:
+                fig.add_trace(go.Scatter(
+                    x=[px for px, py in points],
+                    y=[py for px, py in points],
+                    mode='markers',
+                    marker=dict(size=8, color='red'),
+                    name='Punkty przecięcia',
+                    text=[f'({px:.2f}, {py:.2f})' for px, py in points],
+                    hoverinfo='text'
+                ))
+
+            # Rysowanie fragmentów wspólnych (pokrywających się odcinków)
+            for (x1, y1), (x2, y2) in overlapping_segments:
+                # Linia fragmentu wspólnego
+                fig.add_trace(go.Scatter(
+                    x=[x1, x2],
+                    y=[y1, y2],
+                    mode='lines',
+                    line=dict(color='red', width=3),
+                    showlegend=False
+                ))
+                # Markery na końcach z tooltipem
+                fig.add_trace(go.Scatter(
+                    x=[x1, x2],
+                    y=[y1, y2],
+                    mode='markers',
+                    marker=dict(size=8, color='red'),
+                    showlegend=False,
+                    text=[f"({x1:.2f}, {y1:.2f})", f"({x2:.2f}, {y2:.2f})"],
+                    hoverinfo='text'
+                ))
+
+            fig.update_layout(
+                title="Wizualizacja przecięcia odcinków",
+                xaxis_title="x",
+                yaxis_title="y",
+                width=1600,
+                height=900
+            )
+
+            # Generuj kod HTML z wykresem Plotly
+            plot_html = pyo.plot(fig, output_type='div', include_plotlyjs='cdn')
+
         except Exception as e:
             # Obsługa błędów formatu danych wejściowych
-            result = f"Nieprawidłowy format odcinków. Upewnij się, że każdy odcinek jest w formacie: x1,y1 x2,y2"
+            result = f"Nieprawidłowy format odcinków. {str(e)}"
             return render_template('index.html', result=result)
 
-        # --- Wizualizacja wyników ---
-        fig, ax = plt.subplots()
-        # Rysowanie wszystkich odcinków
-        for seg in segments:
-            ax.plot([seg.p.x, seg.q.x], [seg.p.y, seg.q.y], color='gray')
-            ax.plot(seg.p.x, seg.p.y, 'o', color='gray')
-            ax.plot(seg.q.x, seg.q.y, 'o', color='gray')
-            ax.text(seg.p.x + 0.2, seg.p.y + 0.2, f"({seg.p.x:.2f}, {seg.p.y:.2f})", fontsize=5, color='gray')
-            ax.text(seg.q.x + 0.2, seg.q.y + 0.2, f"({seg.q.x:.2f}, {seg.q.y:.2f})", fontsize=5, color='gray')
-
-        # Rysowanie punktów przecięcia
-        for px, py in points:
-            ax.plot(px, py, 'ro')
-            ax.text(px + 0.2, py + 0.2, f"({px:.2f}, {py:.2f})", fontsize=5, fontweight='bold', color='red')
-
-        # Rysowanie fragmentów wspólnych (pokrywających się odcinków)
-        for (x1, y1), (x2, y2) in overlapping_segments:
-            ax.plot([x1, x2], [y1, y2], color='red', linewidth=2)
-            ax.plot(x1, y1, 'ro')
-            ax.plot(x2, y2, 'ro')
-            ax.text(x1 - 0.3, y1 + 0.3, f"({x1:.2f}, {y1:.2f})", fontsize=5, fontweight='bold', color='red')
-            ax.text(x2 + 0.3, y2 - 0.3, f"({x2:.2f}, {y2:.2f})", fontsize=5, fontweight='bold', color='red')
-
-        # Ustawienia wykresu
-        ax.set_title("Wizualizacja przecięcia odcinków")
-        ax.set_xlabel("x")
-        ax.set_ylabel("y")
-        ax.grid(True)
-        ax.set_aspect('equal', 'box')
-
-        # Automatyczne dopasowanie zakresu osi z marginesem
-        all_x = [p.x for seg in segments for p in [seg.p, seg.q]]
-        all_y = [p.y for seg in segments for p in [seg.p, seg.q]]
-
-        padding = 1
-        x_min, x_max = min(all_x), max(all_x)
-        y_min, y_max = min(all_y), max(all_y)
-
-        x_range = max(4, x_max - x_min)
-        y_range = max(4, y_max - y_min)
-
-        ax.set_xlim(x_min - padding, x_min + x_range + padding)
-        ax.set_ylim(y_min - padding, y_min + y_range + padding)
-
-        # Zapisz wykres do pliku w katalogu static/
-        image_path = f"static/plot_{uuid.uuid4().hex}.png"
-        fig.savefig(image_path, dpi=200)
-        plt.close(fig)
-
     # Wyświetl stronę z wynikami i (opcjonalnie) wykresem
-    return render_template('index.html', result=result, image_path=image_path)
+    return render_template('index.html', result=result, plot_html=plot_html)

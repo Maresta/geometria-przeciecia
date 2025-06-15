@@ -116,9 +116,9 @@
         <h5>{{ result }}</h5>
     {% endif %}
 
-    {% if image_path %}
-        <h3>Wizualizacja:</h3>
-        <img src="{{ url_for('static', filename=image_path.split('static/')[-1]) }}" alt="Wykres przecięcia" style="max-width: 100%; height: auto;" id="plot">
+    {% if plot_html %}
+        <h3 id="plot">Wizualizacja:</h3>
+        {{ plot_html|safe }}
     {% endif %}
 
     <script>
@@ -149,7 +149,7 @@
             const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
             const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
 
-            const top = rect.top + scrollTop - window.innerHeight / 2 + rect.height / 2;
+            const top = rect.top + scrollTop;
             const left = rect.left + scrollLeft - window.innerWidth / 2 + rect.width / 2;
 
             window.scrollTo({
@@ -161,7 +161,6 @@
 
         // Uruchom funkcję po pełnym załadowaniu strony (np. po renderowaniu obrazu)
         window.addEventListener("load", scrollToCenterOfPlot);
-        
     </script>
 </body>
 </html>
