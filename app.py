@@ -118,7 +118,7 @@ def index():
 
         except Exception as e:
             # Obsługa błędów formatu danych wejściowych
-            result = f"Nieprawidłowy format odcinków. {str(e)}"
+            result = f"Nieprawidłowy format odcinków."
             return render_template('index.html', result=result)
 
     # Wyświetl stronę z wynikami i (opcjonalnie) wykresem
